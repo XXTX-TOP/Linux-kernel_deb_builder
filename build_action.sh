@@ -6,9 +6,9 @@ VERSION=$(grep 'Kernel Configuration' < config | awk '{print $3}')
 sed -i "/deb-src/s/# //g" /etc/apt/sources.list
 
 # install dep
-apt update
-apt install -y wget xz-utils make gcc flex bison dpkg-dev bc rsync kmod cpio libssl-dev git lsb
-apt build-dep -y linux
+sudo apt update
+sudo apt install -y wget xz-utils make gcc flex bison dpkg-dev bc rsync kmod cpio libssl-dev git lsb
+sudo apt build-dep -y linux
 
 # change dir to workplace
 cd "${GITHUB_WORKSPACE}" || exit
@@ -27,10 +27,10 @@ cp ../config .config
 # apply patches
 # shellcheck source=src/util.sh
 # source ../patch.d/*.sh
-rm -f debian/files
+sudo rm -f debian/files
 # build deb packages
 CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
-make bindeb-pkg -j"$CPU_CORES"
+sudo make bindeb-pkg -j"$CPU_CORES"
 
 # move deb packages to artifact dir
 cd ..
