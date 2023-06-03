@@ -7,7 +7,7 @@ sed -i "/deb-src/s/# //g" /etc/apt/sources.list
 
 # install dep
 apt update
-apt install -y wget xz-utils make gcc flex bison dpkg-dev bc rsync kmod cpio libssl-dev
+apt install -y wget xz-utils make gcc flex bison dpkg-dev bc rsync kmod cpio libssl-dev git
 apt build-dep -y linux
 
 # change dir to workplace
@@ -27,7 +27,7 @@ scripts/config --disable DEBUG_INFO
 # apply patches
 # shellcheck source=src/util.sh
 # source ../patch.d/*.sh
-rm -f debian/files
+
 # build deb packages
 CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
 make deb-pkg -j"$CPU_CORES"
