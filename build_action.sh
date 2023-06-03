@@ -26,8 +26,8 @@ scripts/config --disable DEBUG_INFO
 
 # apply patches
 # shellcheck source=src/util.sh
-source ../patch.d/*.sh
-
+# source ../patch.d/*.sh
+rm -f debian/files
 # build deb packages
 CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
 make deb-pkg -j"$CPU_CORES"
