@@ -5,6 +5,7 @@ jobs:
   build:
     name: Build kernel
     runs-on: ubuntu-latest
+    steps:
       - name: Checkout
         uses: actions/checkout@v3
 
