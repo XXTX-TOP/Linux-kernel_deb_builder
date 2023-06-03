@@ -22,7 +22,7 @@ cd linux-"$VERSION" || exit
 cp ../config .config
 
 # disable DEBUG_INFO to speedup build
-scripts/config --disable DEBUG_INFO
+# scripts/config --disable DEBUG_INFO
 
 # apply patches
 # shellcheck source=src/util.sh
