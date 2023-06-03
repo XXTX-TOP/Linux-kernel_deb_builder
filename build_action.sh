@@ -27,7 +27,7 @@ cp ../config .config
 # apply patches
 # shellcheck source=src/util.sh
 # source ../patch.d/*.sh
-sudo rm -f debian/files
+
 # build deb packages
 CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
 sudo make bindeb-pkg -j"$CPU_CORES"
