@@ -4,7 +4,7 @@ on: push
 jobs:
   build:
     name: Build kernel
-    runs-on: ubuntu-latest
+    runs-on: vm
     steps:
       - name: Checkout
         uses: actions/checkout@main
