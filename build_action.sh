@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
 
+python3 get-newest-version.py 0
+python3 get-newest-version.py 1
+python3 get-newest-version.py 2
+mainline=cat /tmp/mainline.txt
+mainlineurl=cat /tmp/mainlineurl.txt
+MAINVERSION=expr substr mainline 1 1
+SHOWVERSION=mainline
+
+# add deb-src to sources.list
+sed -i "/deb-src/s/# //g" /etc/apt/sources.list
+
+pip3 install requests wget ttkthemes
+
+sudo apt build-dep -y linux
+neofetch
+
 # Function to download and extract Linux kernel source
 download_and_extract() {
     local version=$1
