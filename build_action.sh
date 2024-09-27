@@ -1,190 +1,82 @@
 #!/usr/bin/env bash
 
-python3 get-newest-version.py 0
-python3 get-newest-version.py 1
-python3 get-newest-version.py 2
-mainline=`cat /tmp/mainline.txt`
-mainlineurl=`cat /tmp/mainlineurl.txt`
-MAINVERSION=`expr substr mainline 1 1`
-SHOWVERSION=mainline
+# Function to download and extract Linux kernel source
+download_and_extract() {
+    local version=$1
+    local url=$2
 
-# add deb-src to sources.list
-sed -i "/deb-src/s/# //g" /etc/apt/sources.list
+    wget "$url"
+    
+    if [[ -f linux-"$version".tar.xz ]]; then
+        tar -xvf linux-"$version".tar.xz
+    elif [[ -f linux-"$version".tar.gz ]]; then
+        tar -xvf linux-"$version".tar.gz
+    elif [[ -f linux-"$version".tar ]]; then
+        tar -xvf linux-"$version".tar
+    elif [[ -f linux-"$version".bz2 ]]; then
+        tar -xvf linux-"$version".tar.bz2
+    fi
+    
+    cd linux-"$version" || exit
+}
 
-pip3 install requests wget ttkthemes
+# Function to configure the kernel
+configure_kernel() {
+    cp ../config .config
+    
+    scripts/config --disable DEBUG_INFO_X86 \
+                   --disable DEBUG_INFO_VMCORE \
+                   --disable DEBUG_INFO_SPLIT \
+                   --disable DEBUG_INFO_BTF_MODULES \
+                   --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT \
+                   --disable DEBUG_INFO_PERF \
+                   --disable DEBUG_INFO_BTF \
+                   --disable DEBUG_INFO_DWARF4 \
+                   --disable DEBUG_INFO_REDUCED \
+                   --set-str SYSTEM_TRUSTED_KEYS "" \
+                   --set-str SYSTEM_REVOCATION_KEYS "" \
+                   --undefine DEBUG_INFO \
+                   --undefine DEBUG_INFO_COMPRESSED \
+                   --undefine DEBUG_INFO_REDUCED \
+                   --undefine DEBUG_INFO_SPLIT \
+                   --undefine GDB_SCRIPTS \
+                   --set-val DEBUG_INFO_DWARF5 n \
+                   --set-val DEBUG_INFO_NONE y
+}
 
-sudo apt build-dep -y linux
-neofetch
+# Function to build the kernel package
+build_kernel() {
+    local cpu_cores=$(($(grep -c processor < /proc/cpuinfo) * 2))
+    sudo make bindeb-pkg -j"$cpu_cores"
+    cd .. 
+}
 
+# Mainline, Stable, Longterm versions setup
+versions=("mainline" "stable")
+for version in "${versions[@]}"; do
+    url_var="${version}url"
+    version_var="$version"
 
-# change dir to workplace
-cd "${GITHUB_WORKSPACE}" || exit
+    version=$(cat /tmp/"$version_var".txt)
+    url=$(cat /tmp/"$url_var".txt)
+    
+    download_and_extract "$version" "$url"
+    configure_kernel
+    build_kernel
+done
 
-wget $mainlineurl
-if [[ -f linux-"$mainline".tar.xz ]]; then
-    tar -xvf linux-"$mainline".tar.xz
-fi
-if [[ -f linux-"$mainline".tar.gz ]]; then
-    tar -xvf linux-"$mainline".tar.gz
-fi
-if [[ -f linux-"$mainline".tar ]]; then
-    tar -xvf linux-"$mainline".tar
-fi
-if [[ -f linux-"$mainline".bz2 ]]; then
-    tar -xvf linux-"$mainline".tar.bz2
-fi
-cd linux-"$mainline" || exit
-
-
-
-# download kernel source
-# wget http://www.kernel.org/pub/linux/kernel/v6.x/linux-6.4.tar.gz  
-# tar -xf linux-"$VERSION".tar.gz
-# cd linux-"$VERSION" || exit
-
-# copy config file
-cp ../config .config
-
-#利用scripts/config对内核进行修改，之后需要写个注释对上述提到的所以东西进行讲解
-scripts/config --disable DEBUG_INFO_X86
-scripts/config --disable DEBUG_INFO_VMCORE
-scripts/config --disable DEBUG_INFO_SPLIT
-scripts/config --disable DEBUG_INFO_BTF_MODULES
-scripts/config --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT
-scripts/config --disable DEBUG_INFO_PERF
-scripts/config --disable DEBUG_INFO_BTF
-scripts/config --disable DEBUG_INFO_DWARF4
-scripts/config --disable DEBUG_INFO_REDUCED
-scripts/config --set-str SYSTEM_TRUSTED_KEYS "" 
-scripts/config --set-str SYSTEM_REVOCATION_KEYS "" 
-scripts/config --undefine DEBUG_INFO 
-scripts/config --undefine DEBUG_INFO_COMPRESSED 
-scripts/config --undefine DEBUG_INFO_REDUCED 
-scripts/config --undefine DEBUG_INFO_SPLIT 
-scripts/config --undefine GDB_SCRIPTS 
-scripts/config --set-val DEBUG_INFO_DWARF5 n 
-scripts/config --set-val DEBUG_INFO_NONE y 
-
-
-
-# build deb packages
-CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
-sudo make bindeb-pkg -j"$CPU_CORES"
-
-# move deb packages to artifact dir
-cd ..
-
-
-stable=`cat /tmp/stable.txt`
-
-# change dir to workplace
-cd "${GITHUB_WORKSPACE}" || exit
-
-stableurl=`cat /tmp/stableurl.txt`
-
-wget $stableurl    
-if [[ -f linux-"$stable".tar.xz ]]; then
-    tar -xvf linux-"$stable".tar.xz
-fi
-if [[ -f linux-"$stable".tar.gz ]]; then
-    tar -xvf linux-"$stable".tar.gz
-fi
-if [[ -f linux-"$stable".tar ]]; then
-    tar -xvf linux-"$stable".tar
-fi
-if [[ -f linux-"$stable".bz2 ]]; then
-    tar -xvf linux-"$stable".tar.bz2
-fi
-cd linux-"$stable" || exit
-
-
-# copy config file
-cp ../config .config
-
-#利用scripts/config对内核进行修改，之后需要写个注释对上述提到的所以东西进行讲解
-scripts/config --disable DEBUG_INFO_X86
-scripts/config --disable DEBUG_INFO_VMCORE
-scripts/config --disable DEBUG_INFO_SPLIT
-scripts/config --disable DEBUG_INFO_BTF_MODULES
-scripts/config --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT
-scripts/config --disable DEBUG_INFO_PERF
-scripts/config --disable DEBUG_INFO_BTF
-scripts/config --disable DEBUG_INFO_DWARF4
-scripts/config --disable DEBUG_INFO_REDUCED
-scripts/config --set-str SYSTEM_TRUSTED_KEYS "" 
-scripts/config --set-str SYSTEM_REVOCATION_KEYS "" 
-scripts/config --undefine DEBUG_INFO 
-scripts/config --undefine DEBUG_INFO_COMPRESSED 
-scripts/config --undefine DEBUG_INFO_REDUCED 
-scripts/config --undefine DEBUG_INFO_SPLIT 
-scripts/config --undefine GDB_SCRIPTS 
-scripts/config --set-val DEBUG_INFO_DWARF5 n 
-scripts/config --set-val DEBUG_INFO_NONE y 
-
-# build deb packages
-CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
-sudo make bindeb-pkg -j"$CPU_CORES"
-
-# move deb packages to artifact dir
-cd ..
-
+# Optional: Uncomment this to handle longterm version
 :<<EOF
-longterm=`cat /tmp/longterm.txt`
+longterm=$(cat /tmp/longterm.txt)
+longtermurl=$(cat /tmp/longtermurl.txt)
 
-# change dir to workplace
-cd "${GITHUB_WORKSPACE}" || exit
-
-longtermurl=`cat /tmp/longtermurl.txt`
-
-wget $longtermurl   
-if [[ -f linux-"$longterm".tar.xz ]]; then
-    tar -xvf linux-"$longterm".tar.xz
-fi
-if [[ -f linux-"$longterm".tar.gz ]]; then
-    tar -xvf linux-"$longterm".tar.gz
-fi
-if [[ -f linux-"$longterm".tar ]]; then
-    tar -xvf linux-"$longterm".tar
-fi
-if [[ -f linux-"$longterm".bz2 ]]; then
-    tar -xvf linux-"$longterm".tar.bz2
-fi
-cd linux-"$longterm" || exit
-
-
-# copy config file
-cp ../config .config
-#利用scripts/config对内核进行修改，之后需要写个注释对上述提到的所以东西进行讲解
-scripts/config --disable DEBUG_INFO_X86
-scripts/config --disable DEBUG_INFO_VMCORE
-scripts/config --disable DEBUG_INFO_SPLIT
-scripts/config --disable DEBUG_INFO_BTF_MODULES
-scripts/config --disable DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT
-scripts/config --disable DEBUG_INFO_PERF
-scripts/config --disable DEBUG_INFO_BTF
-scripts/config --disable DEBUG_INFO_DWARF4
-scripts/config --disable DEBUG_INFO_REDUCED
-scripts/config --set-str SYSTEM_TRUSTED_KEYS "" 
-scripts/config --set-str SYSTEM_REVOCATION_KEYS "" 
-scripts/config --undefine DEBUG_INFO 
-scripts/config --undefine DEBUG_INFO_COMPRESSED 
-scripts/config --undefine DEBUG_INFO_REDUCED 
-scripts/config --undefine DEBUG_INFO_SPLIT 
-scripts/config --undefine GDB_SCRIPTS 
-scripts/config --set-val DEBUG_INFO_DWARF5 n 
-scripts/config --set-val DEBUG_INFO_NONE y 
-
-# build deb packages
-CPU_CORES=$(($(grep -c processor < /proc/cpuinfo)*2))
-sudo make bindeb-pkg -j"$CPU_CORES"
-
-# move deb packages to artifact dir
-cd ..
+download_and_extract "$longterm" "$longtermurl"
+configure_kernel
+build_kernel
 EOF
-mkdir "artifact"
 
+# Create artifact directory and clean up
+mkdir -p artifact
 rm -rfv *dbg*.deb
-
-#mv ./* ../artifact/
 mv ./*.deb artifact/
 sudo bash Install-deb.sh
