@@ -1,1 +1,1 @@
-https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.11.tar.xz
+https://git.kernel.org/torvalds/t/linux-6.12-rc1.tar.gz
