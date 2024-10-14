@@ -1,1 +1,1 @@
-https://git.kernel.org/torvalds/t/linux-6.12-rc2.tar.gz
+https://git.kernel.org/torvalds/t/linux-6.12-rc3.tar.gz
